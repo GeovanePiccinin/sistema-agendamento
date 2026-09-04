@@ -17,7 +17,6 @@ import {
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
-
   const { resolvedTheme, setTheme } = useTheme();
 
   const isDark = resolvedTheme === "dark";
@@ -46,7 +45,6 @@ export function Sidebar() {
         ].join(" ")}
       >
         <Icon className="size-4 shrink-0" />
-
         {!collapsed && <span>{item.label}</span>}
       </Link>
     );
@@ -57,8 +55,9 @@ export function Sidebar() {
 
     return (
       <Tooltip>
-        <TooltipTrigger>{link}</TooltipTrigger>
-
+        <TooltipTrigger render={link}>
+          <span className="sr-only">{item.label}</span>
+        </TooltipTrigger>
         <TooltipContent side="right">{item.label}</TooltipContent>
       </Tooltip>
     );
@@ -104,26 +103,26 @@ export function Sidebar() {
 
       <div className="space-y-1 p-2">
         <Tooltip>
-          <TooltipTrigger>
-            <Button
-              type="button"
-              variant="ghost"
-              className={[
-                "w-full",
-                collapsed ? "justify-center px-2" : "justify-start gap-3",
-              ].join(" ")}
-              onClick={handleThemeToggle}
-            >
-              {isDark ? (
-                <Sun className="size-4 shrink-0" />
-              ) : (
-                <Moon className="size-4 shrink-0" />
-              )}
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                className={[
+                  "w-full",
+                  collapsed ? "justify-center px-2" : "justify-start gap-3",
+                ].join(" ")}
+                onClick={handleThemeToggle}
+              />
+            }
+          >
+            {isDark ? (
+              <Sun className="size-4 shrink-0" />
+            ) : (
+              <Moon className="size-4 shrink-0" />
+            )}
 
-              {!collapsed && (
-                <span>{isDark ? "Tema claro" : "Tema escuro"}</span>
-              )}
-            </Button>
+            {!collapsed && <span>{isDark ? "Tema claro" : "Tema escuro"}</span>}
           </TooltipTrigger>
 
           {collapsed && (
@@ -134,20 +133,21 @@ export function Sidebar() {
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger>
-            <Button
-              type="button"
-              variant="ghost"
-              className={[
-                "w-full",
-                collapsed ? "justify-center px-2" : "justify-start gap-3",
-              ].join(" ")}
-              onClick={handleLogout}
-            >
-              <LogOut className="size-4 shrink-0" />
-
-              {!collapsed && <span>Sair</span>}
-            </Button>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                className={[
+                  "w-full",
+                  collapsed ? "justify-center px-2" : "justify-start gap-3",
+                ].join(" ")}
+                onClick={handleLogout}
+              />
+            }
+          >
+            <LogOut className="size-4 shrink-0" />
+            {!collapsed && <span>Sair</span>}
           </TooltipTrigger>
 
           {collapsed && <TooltipContent side="right">Sair</TooltipContent>}
