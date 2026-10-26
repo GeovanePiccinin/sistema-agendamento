@@ -4,6 +4,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Users,
+  HardHat,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -24,9 +25,14 @@ export const navigationItems: NavigationItem[] = [
     icon: BriefcaseBusiness,
   },
   {
-    label: "Usuários",
-    href: "/users",
+    label: "Clientes",
+    href: "/clients",
     icon: Users,
+  },
+  {
+    label: "Profissionais",
+    href: "/professionals",
+    icon: HardHat,
   },
   {
     label: "Agendamentos",
