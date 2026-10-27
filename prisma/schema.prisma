@@ -42,15 +42,16 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users         User[]
-  clients       Client[]
-  professionals Professional[]
-  services      Service[]
-  appointments  Appointment[]
-  attendances   Attendance[]
-  fichas        Ficha[]
-  payments      Payment[]
-  auditLogs     AuditLog[]
+  users                User[]
+  clients              Client[]
+  professionals        Professional[]
+  professionalServices ProfessionalService[]
+  services             Service[]
+  appointments         Appointment[]
+  attendances          Attendance[]
+  fichas               Ficha[]
+  payments             Payment[]
+  auditLogs            AuditLog[]
 
   @@map("tenants")
 }
@@ -100,9 +101,10 @@ model Professional {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user         User          @relation(fields: [tenantId, userId], references: [tenantId, id], onDelete: Cascade)
-  appointments Appointment[]
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                 User                  @relation(fields: [tenantId, userId], references: [tenantId, id], onDelete: Cascade)
+  appointments         Appointment[]
+  professionalServices ProfessionalService[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, userId])
@@ -121,14 +123,29 @@ model Service {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
+  tenant                  Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments            Appointment[]
+  professionalAssignments ProfessionalService[]
 
   @@unique([tenantId, id])
   @@index([tenantId])
   @@index([tenantId, active])
   @@index([tenantId, name])
   @@map("services")
+}
+
+model ProfessionalService {
+  tenantId       String
+  professionalId String
+  serviceId      String
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  professional Professional @relation(fields: [tenantId, professionalId], references: [tenantId, id], onDelete: Cascade)
+  service      Service      @relation(fields: [tenantId, serviceId], references: [tenantId, id], onDelete: Cascade)
+
+  @@id([tenantId, professionalId, serviceId])
+  @@index([tenantId, serviceId])
+  @@map("professional_services")
 }
 
 model Appointment {

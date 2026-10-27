@@ -513,6 +513,24 @@ async function main(): Promise<void> {
     });
   }
 
+  const professionalServiceAssignments = Array.from(
+    new Map(
+      appointmentDefinitions.map((appointment) => [
+        `${appointment.professionalId}:${appointment.serviceId}`,
+        {
+          tenantId: tenant.id,
+          professionalId: appointment.professionalId,
+          serviceId: appointment.serviceId,
+        },
+      ]),
+    ).values(),
+  );
+
+  await prisma.professionalService.createMany({
+    data: professionalServiceAssignments,
+    skipDuplicates: true,
+  });
+
   // 7. Atendimentos, fichas e pagamentos.
   // Apenas agendamentos históricos confirmados recebem atendimento.
   const completedAppointmentIds = [
