@@ -7,6 +7,7 @@ import {
   HardHat,
   ClipboardCheck,
   FileText,
+  CreditCard,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -50,5 +51,10 @@ export const navigationItems: NavigationItem[] = [
     label: "Fichas de clientes",
     href: "/client-records",
     icon: FileText,
+  },
+  {
+    label: "Pagamentos",
+    href: "/payments",
+    icon: CreditCard,
   },
 ];
