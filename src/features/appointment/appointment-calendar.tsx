@@ -17,6 +17,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 
 import { ErrorState } from "@/components/feedback/error-state";
 import { Button } from "@/components/ui/button";
+import { AppointmentStatus } from "@/generated/prisma/enums";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,14 @@ interface AppointmentCalendarProps {
   serviceId: string;
   status: AppointmentStatusValue | "";
   onSelectSlot: (selection: { startAt: Date; endAt: Date }) => void;
+  onStatusChange: (
+    appointment: AppointmentListItem,
+    status: AppointmentStatusValue,
+  ) => Promise<boolean>;
+  onStartAttendance: (appointment: AppointmentListItem) => void;
+  onOpenAttendance: (appointment: AppointmentListItem) => void;
+  isStatusPending: boolean;
+  isStartingAttendance: boolean;
 }
 
 interface CalendarRange {
@@ -70,6 +79,11 @@ export function AppointmentCalendar({
   serviceId,
   status,
   onSelectSlot,
+  onStatusChange,
+  onStartAttendance,
+  onOpenAttendance,
+  isStatusPending,
+  isStartingAttendance,
 }: AppointmentCalendarProps) {
   const [range, setRange] = useState<CalendarRange>();
   const [selectedAppointment, setSelectedAppointment] =
@@ -137,6 +151,25 @@ export function AppointmentCalendar({
 
   function allowTimedSlot(selection: Parameters<AllowFunc>[0]): boolean {
     return !selection.allDay;
+  }
+
+  async function handleStatusChange(value: string) {
+    if (!selectedAppointment || isStatusPending) {
+      return;
+    }
+
+    const nextStatus = Object.values(AppointmentStatus).find(
+      (appointmentStatus) => appointmentStatus === value,
+    );
+
+    if (!nextStatus || nextStatus === selectedAppointment.status) {
+      return;
+    }
+
+    const updated = await onStatusChange(selectedAppointment, nextStatus);
+    if (updated) {
+      setSelectedAppointment({ ...selectedAppointment, status: nextStatus });
+    }
   }
 
   const events =
@@ -235,9 +268,25 @@ export function AppointmentCalendar({
                     }).format(selectedAppointment.endAt)}
                   </dd>
                 </div>
-                <div>
+                <div className="space-y-1">
                   <dt className="text-muted-foreground">Status</dt>
-                  <dd>{statusLabels[selectedAppointment.status]}</dd>
+                  <dd>
+                    <select
+                      aria-label="Status do agendamento"
+                      className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={selectedAppointment.status}
+                      disabled={isStatusPending}
+                      onChange={(event) => {
+                        void handleStatusChange(event.target.value);
+                      }}
+                    >
+                      {Object.values(AppointmentStatus).map((appointmentStatus) => (
+                        <option key={appointmentStatus} value={appointmentStatus}>
+                          {statusLabels[appointmentStatus]}
+                        </option>
+                      ))}
+                    </select>
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Cliente</dt>
@@ -264,6 +313,26 @@ export function AppointmentCalendar({
                   </div>
                 ) : null}
               </dl>
+              <div className="flex justify-end gap-2">
+                {selectedAppointment.attendanceId ? (
+                  <Button
+                    type="button"
+                    onClick={() => onOpenAttendance(selectedAppointment)}
+                  >
+                    Abrir atendimento
+                  </Button>
+                ) : selectedAppointment.status !== "CANCELLED" ? (
+                  <Button
+                    type="button"
+                    disabled={isStartingAttendance}
+                    onClick={() => onStartAttendance(selectedAppointment)}
+                  >
+                    {isStartingAttendance
+                      ? "Iniciando atendimento..."
+                      : "Iniciar atendimento"}
+                  </Button>
+                ) : null}
+              </div>
             </>
           ) : null}
         </DialogContent>

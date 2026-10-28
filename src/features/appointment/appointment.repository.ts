@@ -87,6 +87,7 @@ function mapAppointment(
     status: appointment.status,
     origin: appointment.origin,
     notes: appointment.notes,
+    attendanceId: appointment.attendance?.id ?? null,
     hasAttendance: appointment.attendance !== null,
     client: appointment.client,
     professional: {

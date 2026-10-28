@@ -5,7 +5,7 @@
 import { useEffect, useRef } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AppointmentListItem } from "./appointment.query";
@@ -91,19 +91,28 @@ const appointment: AppointmentListItem = {
   status: "CONFIRMED",
   origin: "PHONE",
   notes: "Trazer referência do corte.",
+  attendanceId: null,
   hasAttendance: false,
   client: { id: "client-1", name: "Ana Cliente" },
   professional: { id: "professional-1", name: "Bruno Profissional" },
   service: { id: "service-1", name: "Corte", duration: 60 },
 };
 
-function renderCalendar(onSelectSlot = vi.fn()) {
+function renderCalendar(
+  onSelectSlot = vi.fn(),
+  onStatusChange = vi.fn(async () => true),
+  onStartAttendance = vi.fn(),
+  appointmentData: AppointmentListItem = appointment,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  getAppointmentCalendarEvents.mockResolvedValue([appointmentData]);
 
   return {
     onSelectSlot,
+    onStatusChange,
+    onStartAttendance,
     ...render(
       <QueryClientProvider client={queryClient}>
         <AppointmentCalendar
@@ -112,6 +121,11 @@ function renderCalendar(onSelectSlot = vi.fn()) {
           serviceId=""
           status=""
           onSelectSlot={onSelectSlot}
+          onStatusChange={onStatusChange}
+          onStartAttendance={onStartAttendance}
+          onOpenAttendance={vi.fn()}
+          isStatusPending={false}
+          isStartingAttendance={false}
         />
       </QueryClientProvider>,
     ),
@@ -154,6 +168,90 @@ describe("Appointment calendar interactions", () => {
     expect(screen.getByText("Confirmado")).toBeTruthy();
     expect(screen.getByText("Telefone")).toBeTruthy();
     expect(screen.getByText("Trazer referência do corte.")).toBeTruthy();
+  });
+
+  it("updates the appointment status from its details", async () => {
+    const onStatusChange = vi.fn(async () => true);
+    renderCalendar(vi.fn(), onStatusChange);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Ana Cliente/ }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Status do agendamento" }), {
+      target: { value: "NO_SHOW" },
+    });
+
+    await waitFor(() => {
+      expect(onStatusChange).toHaveBeenCalledWith(appointment, "NO_SHOW");
+      expect(
+        screen.getByRole("combobox", { name: "Status do agendamento" }),
+      ).toHaveProperty("value", "NO_SHOW");
+    });
+  });
+
+  it("offers attendance initiation for eligible appointments", async () => {
+    const onStartAttendance = vi.fn();
+    renderCalendar(vi.fn(), vi.fn(async () => true), onStartAttendance);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Ana Cliente/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Iniciar atendimento" }),
+    );
+
+    expect(onStartAttendance).toHaveBeenCalledWith(appointment);
+  });
+
+  it("does not offer attendance initiation for cancelled appointments", async () => {
+    renderCalendar(
+      vi.fn(),
+      vi.fn(async () => true),
+      vi.fn(),
+      { ...appointment, status: "CANCELLED" },
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /Ana Cliente/ }));
+
+    expect(
+      screen.queryByRole("button", { name: "Iniciar atendimento" }),
+    ).toBeNull();
+  });
+
+  it("opens existing attendance instead of offering a duplicate", async () => {
+    const appointmentWithAttendance = {
+      ...appointment,
+      attendanceId: "attendance-1",
+      hasAttendance: true,
+    };
+    const onStartAttendance = vi.fn();
+    const onOpenAttendance = vi.fn();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    getAppointmentCalendarEvents.mockResolvedValue([appointmentWithAttendance]);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AppointmentCalendar
+          search=""
+          professionalId=""
+          serviceId=""
+          status=""
+          onSelectSlot={vi.fn()}
+          onStatusChange={vi.fn(async () => true)}
+          onStartAttendance={onStartAttendance}
+          onOpenAttendance={onOpenAttendance}
+          isStatusPending={false}
+          isStartingAttendance={false}
+        />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /Ana Cliente/ }));
+    expect(
+      screen.queryByRole("button", { name: "Iniciar atendimento" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Abrir atendimento" }));
+
+    expect(onOpenAttendance).toHaveBeenCalledWith(appointmentWithAttendance);
+    expect(onStartAttendance).not.toHaveBeenCalled();
   });
 
   it("prefills the existing Appointment form with local slot times", () => {

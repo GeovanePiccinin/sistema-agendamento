@@ -76,6 +76,7 @@ export interface AppointmentListItem {
   status: AppointmentStatusValue;
   origin: AppointmentOriginValue;
   notes: string | null;
+  attendanceId: string | null;
   hasAttendance: boolean;
   client: {
     id: string;

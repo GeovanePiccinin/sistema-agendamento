@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SortingState } from "@tanstack/react-table";
 import { CalendarDays, List, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { CrudConfirmDialog } from "@/components/crud/crud-confirm-dialog";
@@ -17,6 +18,7 @@ import { ErrorState } from "@/components/feedback/error-state";
 import { SearchInput } from "@/components/search-input/search-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createAttendanceAction } from "@/features/attendance/attendance.actions";
 import { AppointmentOrigin, AppointmentStatus } from "@/generated/prisma/enums";
 import { useListControls } from "@/hooks/use-list-controls";
 
@@ -116,6 +118,7 @@ function formatAppointmentDate(date: Date): string {
 }
 
 export function AppointmentContainer() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const {
     search,
@@ -227,6 +230,57 @@ export function AppointmentContainer() {
     },
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: ({
+      appointment,
+      status,
+    }: {
+      appointment: AppointmentListItem;
+      status: AppointmentStatusValue;
+    }) =>
+      updateAppointmentAction({
+        id: appointment.id,
+        clientId: appointment.client.id,
+        professionalId: appointment.professional.id,
+        serviceId: appointment.service.id,
+        startAt: appointment.startAt.toISOString(),
+        endAt: appointment.endAt.toISOString(),
+        status,
+        origin: appointment.origin,
+        notes: appointment.notes ?? "",
+      }),
+    onSuccess: async () => {
+      toast.success("Status do agendamento atualizado.");
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar o status do agendamento.",
+      );
+    },
+  });
+
+  const startAttendanceMutation = useMutation({
+    mutationFn: createAttendanceAction,
+    onSuccess: async () => {
+      toast.success("Atendimento iniciado com sucesso.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+        queryClient.invalidateQueries({ queryKey: ["attendances"] }),
+      ]);
+      router.push("/attendances");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível iniciar o atendimento.",
+      );
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteAppointmentAction,
     onSuccess: async () => {
@@ -297,6 +351,38 @@ export function AppointmentContainer() {
     deleteMutation.mutate({ id: deletingAppointment.id });
   }
 
+  async function handleStatusChange(
+    appointment: AppointmentListItem,
+    nextStatus: AppointmentStatusValue,
+  ): Promise<boolean> {
+    return updateStatusMutation
+      .mutateAsync({ appointment, status: nextStatus })
+      .then(
+        () => true,
+        () => false,
+      );
+  }
+
+  function handleStartAttendance(appointment: AppointmentListItem) {
+    if (appointment.attendanceId) {
+      router.push("/attendances");
+      return;
+    }
+
+    if (appointment.status === "CANCELLED" || startAttendanceMutation.isPending) {
+      return;
+    }
+
+    startAttendanceMutation.mutate({
+      appointmentId: appointment.id,
+      notes: "",
+    });
+  }
+
+  function handleOpenAttendance() {
+    router.push("/attendances");
+  }
+
   const columnHelper = createAppColumnHelper<AppointmentListItem>();
   const columns = columnHelper.columns([
     columnHelper.accessor("startAt", {
@@ -338,6 +424,26 @@ export function AppointmentContainer() {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
+          {row.original.attendanceId ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleOpenAttendance}
+            >
+              Abrir atendimento
+            </Button>
+          ) : row.original.status !== "CANCELLED" ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={startAttendanceMutation.isPending}
+              onClick={() => handleStartAttendance(row.original)}
+            >
+              Iniciar atendimento
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
@@ -592,6 +698,11 @@ export function AppointmentContainer() {
             serviceId={serviceId}
             status={status}
             onSelectSlot={handleCreateFromSlot}
+            onStatusChange={handleStatusChange}
+            onStartAttendance={handleStartAttendance}
+            onOpenAttendance={handleOpenAttendance}
+            isStatusPending={updateStatusMutation.isPending}
+            isStartingAttendance={startAttendanceMutation.isPending}
           />
         )}
       </div>

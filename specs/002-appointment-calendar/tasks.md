@@ -50,11 +50,13 @@ No new shared infrastructure is required; reuse the existing Appointment feature
 
 **Independent Test**: Update each existing status and start Attendance from both entry points; confirm canceled appointments are rejected and an appointment cannot get duplicate attendances.
 
-- [ ] T013 [US3] Add tests for status updates and attendance initiation behavior, including canceled appointments, duplicates, and professional scope, in `src/features/appointment/appointment.test.ts` and `src/features/attendance/attendance.test.ts`.
-- [ ] T014 [US3] Add a status selector to appointment details using existing enum values and the existing update operation in `src/features/appointment/appointment-calendar.tsx`.
-- [ ] T015 [US3] Expose one reusable start-attendance action in calendar details and the Appointment table, using the existing Attendance Server Action and refreshing appointment/attendance queries in `src/features/appointment/appointment-calendar.tsx` and `src/features/appointment/appointment-container.tsx`.
-- [ ] T016 [US3] Handle an existing Attendance without creating a duplicate and provide navigation to the existing Attendance experience in `src/features/appointment/appointment.actions.ts` and `src/features/appointment/appointment-container.tsx`.
+- [X] T013 [US3] Cover status changes and attendance initiation in calendar interaction tests; reuse the existing Attendance repository tests for canceled appointments, duplicates, and professional scope.
+- [X] T014 [US3] Add a status selector to appointment details using existing enum values and the existing update operation in `src/features/appointment/appointment-calendar.tsx`.
+- [X] T015 [US3] Expose one reusable start-attendance action in calendar details and the Appointment table, using the existing Attendance Server Action and refreshing appointment/attendance queries in `src/features/appointment/appointment-calendar.tsx` and `src/features/appointment/appointment-container.tsx`.
+- [X] T016 [US3] Handle an existing Attendance without creating a duplicate and provide navigation to the existing Attendance experience in `src/features/appointment/appointment-container.tsx`.
 - [ ] T017 [US3] Run focused Appointment and Attendance tests, ESLint, TypeScript check, and production build for Stage 3.
+
+**Stage 3 validation note**: Calendar interaction tests (7), targeted ESLint, TypeScript check, and production build pass. Appointment and Attendance repository suites could not run because the configured database is missing `public.payments`; no schema changes are part of this stage, so migrations were not applied.
 
 ---
 

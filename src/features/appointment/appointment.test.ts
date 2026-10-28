@@ -395,6 +395,8 @@ describe("Appointment", () => {
       });
       expect(result.items[0]).toMatchObject({
         status: "CONFIRMED",
+        attendanceId: null,
+        hasAttendance: false,
         client: { id: clientAId, name: "Ana Cliente" },
         professional: { id: professionalAId, name: "Bruno Profissional" },
         service: { id: serviceAId, name: "Corte", duration: 60 },
