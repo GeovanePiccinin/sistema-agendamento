@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Users,
   HardHat,
+  ClipboardCheck,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -38,5 +39,10 @@ export const navigationItems: NavigationItem[] = [
     label: "Agendamentos",
     href: "/appointments",
     icon: CalendarDays,
+  },
+  {
+    label: "Atendimentos",
+    href: "/attendances",
+    icon: ClipboardCheck,
   },
 ];
