@@ -8,13 +8,16 @@ import { logger } from "@/lib/logger/logger";
 import {
   createAppointment,
   deleteAppointment,
+  findAppointmentsInRange,
   findAppointmentFilterOptions,
   findAppointmentFormOptions,
   findAppointments,
   updateAppointment,
 } from "./appointment.repository";
 import {
+  appointmentCalendarQuerySchema,
   appointmentListQuerySchema,
+  type AppointmentListItem,
   type AppointmentListResult,
 } from "./appointment.query";
 import {
@@ -77,6 +80,19 @@ export async function getAppointments(
     ...result,
     canChooseProfessional: actor.role === "ADMIN",
   };
+}
+
+export async function getAppointmentCalendarEvents(
+  input: unknown,
+): Promise<AppointmentListItem[]> {
+  const actor = await getAppointmentActor();
+  const query = appointmentCalendarQuerySchema.parse(input);
+
+  return findAppointmentsInRange(
+    actor.tenantId,
+    query,
+    actor.role === "PROFESSIONAL" ? actor.professionalId : undefined,
+  );
 }
 
 export async function getAppointmentFilterOptions() {

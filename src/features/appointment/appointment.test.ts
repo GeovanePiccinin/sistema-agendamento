@@ -10,9 +10,13 @@ import {
   createAppointment,
   deleteAppointment,
   findAppointments,
+  findAppointmentsInRange,
   updateAppointment,
 } from "./appointment.repository";
-import { appointmentListQuerySchema } from "./appointment.query";
+import {
+  appointmentCalendarQuerySchema,
+  appointmentListQuerySchema,
+} from "./appointment.query";
 import {
   appointmentFormSchema,
   createAppointmentSchema,
@@ -145,6 +149,7 @@ describe("Appointment", () => {
         sortBy: "startAt",
         sortDirection: "asc",
       });
+
     });
 
     it("validates supported filters and rejects invalid periods or sort values", () => {
@@ -223,6 +228,130 @@ describe("Appointment", () => {
   });
 
   describe("repository", () => {
+    it("lists appointments overlapping the range with filters and tenant/professional scope", async () => {
+      const crossingAppointmentId = await createAppointment(
+        tenantAId,
+        appointmentData({
+          startAt: new Date("2031-02-05T09:30:00.000Z"),
+          endAt: new Date("2031-02-05T10:30:00.000Z"),
+        }),
+        professionalAId,
+      );
+      await createAppointment(
+        tenantAId,
+        appointmentData({
+          startAt: new Date("2031-02-05T10:30:00.000Z"),
+          endAt: new Date("2031-02-05T11:30:00.000Z"),
+        }),
+        professionalAId,
+      );
+
+      const secondUser = await prisma.user.create({
+        data: {
+          tenantId: tenantAId,
+          name: "Carla Profissional",
+          email: `appointment-calendar-${crypto.randomUUID()}@example.com`,
+          passwordHash: "test-hash",
+          role: "PROFESSIONAL",
+        },
+      });
+      const secondProfessional = await prisma.professional.create({
+        data: { tenantId: tenantAId, userId: secondUser.id },
+      });
+      await prisma.professionalService.create({
+        data: {
+          tenantId: tenantAId,
+          professionalId: secondProfessional.id,
+          serviceId: serviceAId,
+        },
+      });
+      const secondProfessionalAppointmentId = await createAppointment(
+        tenantAId,
+        appointmentData({
+          professionalId: secondProfessional.id,
+          status: "CONFIRMED",
+          startAt: new Date("2031-02-05T09:30:00.000Z"),
+          endAt: new Date("2031-02-05T10:30:00.000Z"),
+        }),
+        secondProfessional.id,
+      );
+
+      const foreignClient = await prisma.client.create({
+        data: { tenantId: tenantBId, name: "Cliente externo" },
+      });
+      const foreignService = await prisma.service.create({
+        data: {
+          tenantId: tenantBId,
+          name: "Serviço externo",
+          duration: 60,
+          price: 50,
+        },
+      });
+      const foreignUser = await prisma.user.create({
+        data: {
+          tenantId: tenantBId,
+          name: "Profissional externo",
+          email: `appointment-calendar-foreign-${crypto.randomUUID()}@example.com`,
+          passwordHash: "test-hash",
+          role: "PROFESSIONAL",
+        },
+      });
+      const foreignProfessional = await prisma.professional.create({
+        data: { tenantId: tenantBId, userId: foreignUser.id },
+      });
+      await prisma.professionalService.create({
+        data: {
+          tenantId: tenantBId,
+          professionalId: foreignProfessional.id,
+          serviceId: foreignService.id,
+        },
+      });
+      await createAppointment(
+        tenantBId,
+        appointmentData({
+          clientId: foreignClient.id,
+          professionalId: foreignProfessional.id,
+          serviceId: foreignService.id,
+          startAt: new Date("2031-02-05T09:30:00.000Z"),
+          endAt: new Date("2031-02-05T10:30:00.000Z"),
+        }),
+        foreignProfessional.id,
+      );
+
+      const query = appointmentCalendarQuerySchema.parse({
+        from: "2031-02-05T10:00:00.000Z",
+        toExclusive: "2031-02-05T10:30:00.000Z",
+        search: "Ana Cliente",
+      });
+      const appointments = await findAppointmentsInRange(tenantAId, query);
+      const professionalAppointments = await findAppointmentsInRange(
+        tenantAId,
+        query,
+        professionalAId,
+      );
+      const filteredAppointments = await findAppointmentsInRange(tenantAId, {
+        ...query,
+        professionalId: secondProfessional.id,
+        status: "CONFIRMED",
+      });
+      const overriddenScope = await findAppointmentsInRange(
+        tenantAId,
+        { ...query, professionalId: secondProfessional.id },
+        professionalAId,
+      );
+
+      expect(appointments.map(({ id }) => id).sort()).toEqual(
+        [crossingAppointmentId, secondProfessionalAppointmentId].sort(),
+      );
+      expect(professionalAppointments.map(({ id }) => id)).toEqual([
+        crossingAppointmentId,
+      ]);
+      expect(filteredAppointments.map(({ id }) => id)).toEqual([
+        secondProfessionalAppointmentId,
+      ]);
+      expect(overriddenScope).toHaveLength(0);
+    });
+
     it("lists tenant-scoped appointments with search, filters and pagination", async () => {
       await createAppointment(tenantAId, appointmentData(), professionalAId);
       await createAppointment(

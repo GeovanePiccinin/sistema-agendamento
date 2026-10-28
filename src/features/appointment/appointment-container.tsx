@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SortingState } from "@tanstack/react-table";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, List, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { CrudConfirmDialog } from "@/components/crud/crud-confirm-dialog";
@@ -28,6 +28,7 @@ import {
   getAppointments,
   updateAppointmentAction,
 } from "./appointment.actions";
+import { AppointmentCalendar } from "./appointment-calendar";
 import type {
   AppointmentListItem,
   AppointmentListQuery,
@@ -134,6 +135,7 @@ export function AppointmentContainer() {
   const [professionalId, setProfessionalId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [status, setStatus] = useState<AppointmentStatusValue | "">("");
+  const [view, setView] = useState<"table" | "calendar">("table");
   const [formOpen, setFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<
     AppointmentListItem | undefined
@@ -172,7 +174,7 @@ export function AppointmentContainer() {
       query.status,
     ],
     queryFn: () => getAppointments(query),
-    enabled: !rangeInvalid,
+    enabled: view === "table" && !rangeInvalid,
     placeholderData: (previousData) => previousData,
   });
 
@@ -430,10 +432,30 @@ export function AppointmentContainer() {
           <p className="text-sm text-muted-foreground">
             Consulte e gerencie os agendamentos do tenant.
           </p>
-          <Button type="button" onClick={handleCreate}>
-            <Plus />
-            Novo agendamento
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={view === "table" ? "default" : "outline"}
+              aria-pressed={view === "table"}
+              onClick={() => setView("table")}
+            >
+              <List />
+              Tabela
+            </Button>
+            <Button
+              type="button"
+              variant={view === "calendar" ? "default" : "outline"}
+              aria-pressed={view === "calendar"}
+              onClick={() => setView("calendar")}
+            >
+              <CalendarDays />
+              Calendário
+            </Button>
+            <Button type="button" onClick={handleCreate}>
+              <Plus />
+              Novo agendamento
+            </Button>
+          </div>
         </div>
 
         <SearchInput
@@ -443,31 +465,35 @@ export function AppointmentContainer() {
         />
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="space-y-1 text-xs font-medium">
-            <span>De</span>
-            <Input
-              type="date"
-              value={fromDate}
-              onChange={(event) => {
-                setFromDate(event.target.value);
-                setPagination((current) => ({ ...current, pageIndex: 0 }));
-              }}
-              className="w-40"
-            />
-          </label>
+          {view === "table" ? (
+            <>
+              <label className="space-y-1 text-xs font-medium">
+                <span>De</span>
+                <Input
+                  type="date"
+                  value={fromDate}
+                  onChange={(event) => {
+                    setFromDate(event.target.value);
+                    setPagination((current) => ({ ...current, pageIndex: 0 }));
+                  }}
+                  className="w-40"
+                />
+              </label>
 
-          <label className="space-y-1 text-xs font-medium">
-            <span>Até</span>
-            <Input
-              type="date"
-              value={toDate}
-              onChange={(event) => {
-                setToDate(event.target.value);
-                setPagination((current) => ({ ...current, pageIndex: 0 }));
-              }}
-              className="w-40"
-            />
-          </label>
+              <label className="space-y-1 text-xs font-medium">
+                <span>Até</span>
+                <Input
+                  type="date"
+                  value={toDate}
+                  onChange={(event) => {
+                    setToDate(event.target.value);
+                    setPagination((current) => ({ ...current, pageIndex: 0 }));
+                  }}
+                  className="w-40"
+                />
+              </label>
+            </>
+          ) : null}
 
           <label className="space-y-1 text-xs font-medium">
             <span>Profissional</span>
@@ -546,7 +572,16 @@ export function AppointmentContainer() {
           />
         ) : null}
 
-        {listContent}
+        {view === "table" ? (
+          listContent
+        ) : (
+          <AppointmentCalendar
+            search={debouncedSearch}
+            professionalId={professionalId}
+            serviceId={serviceId}
+            status={status}
+          />
+        )}
       </div>
 
       <CrudFormDialog

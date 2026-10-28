@@ -33,7 +33,38 @@ export const appointmentListQuerySchema = z
     }
   });
 
+export const appointmentCalendarQuerySchema = z
+  .object({
+    search: z.string().trim().max(100).default(""),
+    from: isoDateTimeSchema,
+    toExclusive: isoDateTimeSchema,
+    professionalId: z.string().min(1).optional(),
+    serviceId: z.string().min(1).optional(),
+    status: z.enum(AppointmentStatus).optional(),
+  })
+  .superRefine((query, context) => {
+    const from = new Date(query.from).getTime();
+    const to = new Date(query.toExclusive).getTime();
+
+    if (from >= to) {
+      context.addIssue({
+        code: "custom",
+        path: ["toExclusive"],
+        message: "O período final deve ser posterior ao período inicial.",
+      });
+    } else if (to - from > 62 * 24 * 60 * 60 * 1000) {
+      context.addIssue({
+        code: "custom",
+        path: ["toExclusive"],
+        message: "O intervalo do calendário não pode exceder 62 dias.",
+      });
+    }
+  });
+
 export type AppointmentListQuery = z.infer<typeof appointmentListQuerySchema>;
+export type AppointmentCalendarQuery = z.infer<
+  typeof appointmentCalendarQuerySchema
+>;
 
 export type AppointmentStatusValue = keyof typeof AppointmentStatus;
 export type AppointmentOriginValue = keyof typeof AppointmentOrigin;

@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
 import type {
+  AppointmentCalendarQuery,
   AppointmentFilterOptions,
   AppointmentFormOptions,
   AppointmentListItem,
@@ -74,6 +75,28 @@ function getAppointmentOrderBy(
   return [orderBy, { id: "asc" }];
 }
 
+function mapAppointment(
+  appointment: Prisma.AppointmentGetPayload<{
+    select: typeof appointmentSelect;
+  }>,
+): AppointmentListItem {
+  return {
+    id: appointment.id,
+    startAt: appointment.startAt,
+    endAt: appointment.endAt,
+    status: appointment.status,
+    origin: appointment.origin,
+    notes: appointment.notes,
+    hasAttendance: appointment.attendance !== null,
+    client: appointment.client,
+    professional: {
+      id: appointment.professional.id,
+      name: appointment.professional.user.name,
+    },
+    service: appointment.service,
+  };
+}
+
 export async function findAppointments(
   tenantId: string,
   query: AppointmentListQuery,
@@ -141,21 +164,7 @@ export async function findAppointments(
     prisma.appointment.count({ where }),
   ]);
 
-  const items: AppointmentListItem[] = appointments.map((appointment) => ({
-    id: appointment.id,
-    startAt: appointment.startAt,
-    endAt: appointment.endAt,
-    status: appointment.status,
-    origin: appointment.origin,
-    notes: appointment.notes,
-    hasAttendance: appointment.attendance !== null,
-    client: appointment.client,
-    professional: {
-      id: appointment.professional.id,
-      name: appointment.professional.user.name,
-    },
-    service: appointment.service,
-  }));
+  const items = appointments.map(mapAppointment);
 
   return {
     items,
@@ -164,6 +173,58 @@ export async function findAppointments(
     pageSize,
     pageCount: Math.ceil(total / pageSize),
   };
+}
+
+export async function findAppointmentsInRange(
+  tenantId: string,
+  query: AppointmentCalendarQuery,
+  professionalScopeId?: string,
+): Promise<AppointmentListItem[]> {
+  const where: Prisma.AppointmentWhereInput = {
+    tenantId,
+    ...(professionalScopeId || query.professionalId
+      ? {
+          AND: [
+            ...(professionalScopeId
+              ? [{ professionalId: professionalScopeId }]
+              : []),
+            ...(query.professionalId
+              ? [{ professionalId: query.professionalId }]
+              : []),
+          ],
+        }
+      : {}),
+    startAt: { lt: new Date(query.toExclusive) },
+    endAt: { gt: new Date(query.from) },
+    ...(query.serviceId ? { serviceId: query.serviceId } : {}),
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.search
+      ? {
+          OR: [
+            { client: { name: { contains: query.search, mode: "insensitive" } } },
+            {
+              professional: {
+                user: {
+                  name: { contains: query.search, mode: "insensitive" },
+                },
+              },
+            },
+            {
+              service: { name: { contains: query.search, mode: "insensitive" } },
+            },
+            { notes: { contains: query.search, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
+
+  const appointments = await prisma.appointment.findMany({
+    where,
+    orderBy: [{ startAt: "asc" }, { id: "asc" }],
+    select: appointmentSelect,
+  });
+
+  return appointments.map(mapAppointment);
 }
 
 export async function findAppointmentFilterOptions(
