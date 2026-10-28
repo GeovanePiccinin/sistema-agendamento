@@ -4,12 +4,12 @@
 
 ## Summary
 
-Add a calendar view alongside the existing Appointment table. Keep Appointment queries and authorization in the current feature slice, add a bounded interval query using the existing models, and render it with FullCalendar. Implement only Stage 1 now; slot creation, details, status changes, and starting Attendance remain subsequent tasks.
+Add a calendar view alongside the existing Appointment table. Keep Appointment queries and authorization in the current feature slice, add a bounded interval query using the existing models, and render it with FullCalendar. Stages 1 and 2 provide calendar consultation, slot-prefilled appointment creation, and details; status changes and starting Attendance remain for Stage 3.
 
 ## Technical Context
 
 - **Stack**: Next.js 16 App Router, React 19, TypeScript strict, Prisma 7/PostgreSQL, Zod 4, TanStack Query, Vitest.
-- **Calendar**: use the free FullCalendar React packages at `6.1.22` (`core`, `react`, `timegrid`, `daygrid`). Registry metadata confirms the React package peers include React/React DOM 19 and core `~6.1.22`; use it only in a client component. Add the separate interaction plugin only with the later slot-selection stage. No Premium package.
+- **Calendar**: use the free FullCalendar React packages at `6.1.22` (`core`, `react`, `timegrid`, `daygrid`, `interaction`). Registry metadata confirms the React package peers include React/React DOM 19 and core `~6.1.22`; use it only in a client component. No Premium package.
 - **Storage**: existing Appointment, Attendance, Tenant, and Professional schema; no schema change or migration.
 - **Data/query**: validate UTC ISO interval and filters with Zod; require `from < to` and a maximum 62-day span; query tenant-scoped appointments whose times overlap the interval (`startAt < to`, `endAt > from`), then apply existing professional, service, status, and search filters.
 - **Timezone**: the calendar displays browser-local time; send interval instants as UTC ISO strings and convert event instants through the calendar library.
@@ -60,7 +60,7 @@ Stage 1 should preserve `/appointments` and the table; add a view toggle, with t
 1. Add the calendar interval Zod query and tenant-scoped repository/action.
 2. Add the FullCalendar view and integrate it with existing Appointment filters and the table toggle.
 3. Add focused tests for interval validation, overlap inclusion/exclusion, filters, and scope; run focused tests, lint, TypeScript, and build.
-4. Leave slot creation, details/status interaction, and Attendance initiation pending for a later request.
+4. Slot selection and appointment details are implemented in Stage 2. Leave status updates and Attendance initiation for the next request.
 
 ## Complexity Tracking
 

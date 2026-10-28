@@ -37,10 +37,10 @@ No new shared infrastructure is required; reuse the existing Appointment feature
 
 **Independent Test**: Select a free slot and verify form prefill; select an event and verify its details.
 
-- [ ] T009 [US2] Add focused interaction tests for selecting a slot, local-time prefill, and opening appointment details in `src/features/appointment/appointment-calendar.test.tsx`.
-- [ ] T010 [US2] Pass slot selection into the existing Appointment form with the selected date/time while preserving the table's create/edit behavior in `src/features/appointment/appointment-container.tsx` and `src/features/appointment/appointment-form.tsx`.
-- [ ] T011 [US2] Add an appointment details interaction for calendar events using the existing appointment fields and accessible dialog patterns in `src/features/appointment/appointment-calendar.tsx`.
-- [ ] T012 [US2] Run the focused Appointment interaction tests, ESLint, and TypeScript check for Stage 2.
+- [X] T009 [US2] Add focused interaction tests for selecting a slot, local-time prefill, and opening appointment details in `src/features/appointment/appointment-calendar.test.tsx`.
+- [X] T010 [US2] Pass slot selection into the existing Appointment form with the selected date/time while preserving the table's create/edit behavior in `src/features/appointment/appointment-container.tsx` and `src/features/appointment/appointment-form.tsx`.
+- [X] T011 [US2] Add an appointment details interaction for calendar events using the existing appointment fields and accessible dialog patterns in `src/features/appointment/appointment-calendar.tsx`.
+- [X] T012 [US2] Run the focused Appointment interaction tests, ESLint, and TypeScript check for Stage 2.
 
 ---
 

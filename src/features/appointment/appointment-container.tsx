@@ -137,6 +137,9 @@ export function AppointmentContainer() {
   const [status, setStatus] = useState<AppointmentStatusValue | "">("");
   const [view, setView] = useState<"table" | "calendar">("table");
   const [formOpen, setFormOpen] = useState(false);
+  const [newAppointmentSlot, setNewAppointmentSlot] = useState<
+    { startAt: Date; endAt: Date } | undefined
+  >();
   const [editingAppointment, setEditingAppointment] = useState<
     AppointmentListItem | undefined
   >();
@@ -255,11 +258,19 @@ export function AppointmentContainer() {
 
   function handleCreate() {
     setEditingAppointment(undefined);
+    setNewAppointmentSlot(undefined);
+    setFormOpen(true);
+  }
+
+  function handleCreateFromSlot(selection: { startAt: Date; endAt: Date }) {
+    setEditingAppointment(undefined);
+    setNewAppointmentSlot(selection);
     setFormOpen(true);
   }
 
   function handleEdit(appointment: AppointmentListItem) {
     setEditingAppointment(appointment);
+    setNewAppointmentSlot(undefined);
     setFormOpen(true);
   }
 
@@ -580,6 +591,7 @@ export function AppointmentContainer() {
             professionalId={professionalId}
             serviceId={serviceId}
             status={status}
+            onSelectSlot={handleCreateFromSlot}
           />
         )}
       </div>
@@ -595,6 +607,7 @@ export function AppointmentContainer() {
 
           if (!open) {
             setEditingAppointment(undefined);
+            setNewAppointmentSlot(undefined);
           }
         }}
         title={editingAppointment ? "Editar agendamento" : "Novo agendamento"}
@@ -627,8 +640,13 @@ export function AppointmentContainer() {
             />
           ) : formOptionsQuery.data ? (
             <AppointmentForm
-              key={editingAppointment?.id ?? "new"}
+              key={
+                editingAppointment?.id ??
+                `${newAppointmentSlot?.startAt.toISOString() ?? "new"}-${newAppointmentSlot?.endAt.toISOString() ?? ""}`
+              }
               appointment={editingAppointment}
+              initialStartAt={newAppointmentSlot?.startAt}
+              initialEndAt={newAppointmentSlot?.endAt}
               clients={formOptionsQuery.data.clients}
               professionals={formOptionsQuery.data.professionals}
               services={formOptionsQuery.data.services}
@@ -638,6 +656,7 @@ export function AppointmentContainer() {
               onCancel={() => {
                 setFormOpen(false);
                 setEditingAppointment(undefined);
+                setNewAppointmentSlot(undefined);
               }}
             />
           ) : null

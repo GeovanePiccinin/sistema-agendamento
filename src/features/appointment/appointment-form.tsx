@@ -23,6 +23,8 @@ import {
 
 interface AppointmentFormProps {
   appointment?: AppointmentListItem;
+  initialStartAt?: Date;
+  initialEndAt?: Date;
   clients: AppointmentClientOption[];
   professionals: AppointmentProfessionalOption[];
   services: AppointmentServiceOption[];
@@ -59,6 +61,8 @@ function toLocalDateTimeValue(value: Date | undefined): string {
 
 export function AppointmentForm({
   appointment,
+  initialStartAt,
+  initialEndAt,
   clients,
   professionals,
   services,
@@ -74,8 +78,8 @@ export function AppointmentForm({
       professionalId:
         appointment?.professional.id ?? professionals[0]?.id ?? "",
       serviceId: appointment?.service.id ?? "",
-      startAt: toLocalDateTimeValue(appointment?.startAt),
-      endAt: toLocalDateTimeValue(appointment?.endAt),
+      startAt: toLocalDateTimeValue(appointment?.startAt ?? initialStartAt),
+      endAt: toLocalDateTimeValue(appointment?.endAt ?? initialEndAt),
       status: appointment?.status ?? "SCHEDULED",
       origin: appointment?.origin ?? "MANUAL",
       notes: appointment?.notes ?? "",
