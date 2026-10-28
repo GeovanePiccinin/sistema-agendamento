@@ -49,7 +49,7 @@ model Tenant {
   services             Service[]
   appointments         Appointment[]
   attendances          Attendance[]
-  fichas               Ficha[]
+  clientRecords        ClientRecord[]
   payments             Payment[]
   auditLogs            AuditLog[]
 
@@ -86,7 +86,7 @@ model Client {
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointments Appointment[]
-  fichas       Ficha[]
+  clientRecords ClientRecord[]
 
   @@unique([tenantId, id])
   @@index([tenantId])
@@ -190,7 +190,7 @@ model Attendance {
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointment Appointment @relation(fields: [tenantId, appointmentId], references: [tenantId, id], onDelete: Restrict)
-  fichas      Ficha[]
+  clientRecords ClientRecord[]
   payment     Payment?
 
   @@unique([tenantId, id])
@@ -200,7 +200,7 @@ model Attendance {
   @@map("attendances")
 }
 
-model Ficha {
+model ClientRecord {
   id           String   @id @default(cuid())
   tenantId     String
   clientId     String
@@ -217,7 +217,7 @@ model Ficha {
   @@index([tenantId])
   @@index([tenantId, clientId])
   @@index([tenantId, attendanceId])
-  @@map("fichas")
+  @@map("client_records")
 }
 
 model Payment {

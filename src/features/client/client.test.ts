@@ -175,7 +175,7 @@ describe("Client list", () => {
     });
 
     afterEach(async () => {
-      await prisma.ficha.deleteMany({
+      await prisma.clientRecord.deleteMany({
         where: {
           tenantId: {
             in: [tenantAId, tenantBId],
@@ -396,9 +396,9 @@ describe("Client list", () => {
       );
     });
 
-    it("preserves clients referenced by a ficha or appointment", async () => {
+    it("preserves clients referenced by a client record or appointment", async () => {
       const fichaClient = await prisma.client.create({
-        data: { tenantId: tenantAId, name: "Cliente com ficha" },
+        data: { tenantId: tenantAId, name: "Cliente com registro" },
       });
       const appointmentClient = await prisma.client.create({
         data: { tenantId: tenantAId, name: "Cliente com agendamento" },
@@ -427,7 +427,7 @@ describe("Client list", () => {
       });
       const startAt = new Date("2030-01-01T10:00:00.000Z");
 
-      await prisma.ficha.create({
+      await prisma.clientRecord.create({
         data: {
           tenantId: tenantAId,
           clientId: fichaClient.id,

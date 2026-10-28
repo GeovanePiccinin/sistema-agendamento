@@ -525,7 +525,7 @@ export function AttendanceContainer() {
         title="Excluir atendimento?"
         description={
           deletingAttendance?.hasRelatedRecords
-            ? "Este atendimento possui ficha ou pagamento vinculado e não poderá ser excluído."
+            ? "Este atendimento possui ficha de cliente ou pagamento vinculado e não poderá ser excluído."
             : deletingAttendance
               ? `O atendimento de "${deletingAttendance.appointment.client.name}" será excluído permanentemente.`
               : "Esta operação não poderá ser desfeita."

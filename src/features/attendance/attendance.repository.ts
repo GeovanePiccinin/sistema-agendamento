@@ -38,7 +38,7 @@ const attendanceSelect = {
     },
   },
   payment: { select: { id: true } },
-  fichas: { select: { id: true }, take: 1 },
+  clientRecords: { select: { id: true }, take: 1 },
 } satisfies Prisma.AttendanceSelect;
 
 function getOrderBy(
@@ -149,7 +149,7 @@ export async function findAttendances(
       },
     },
     hasRelatedRecords:
-      attendance.payment !== null || attendance.fichas.length > 0,
+      attendance.payment !== null || attendance.clientRecords.length > 0,
   }));
 
   return {

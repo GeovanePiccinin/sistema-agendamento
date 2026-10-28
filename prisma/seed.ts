@@ -531,7 +531,7 @@ async function main(): Promise<void> {
     skipDuplicates: true,
   });
 
-  // 7. Atendimentos, fichas e pagamentos.
+  // 7. Atendimentos, registros de clientes e pagamentos.
   // Apenas agendamentos históricos confirmados recebem atendimento.
   const completedAppointmentIds = [
     "seed-appointment-1",
@@ -574,7 +574,7 @@ async function main(): Promise<void> {
       },
     });
 
-    await prisma.ficha.upsert({
+    await prisma.clientRecord.upsert({
       where: {
         id: `seed-ficha-${index + 1}`,
       },

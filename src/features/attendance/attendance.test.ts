@@ -89,7 +89,7 @@ describe("Attendance", () => {
     await prisma.payment.deleteMany({
       where: { tenantId: { in: tenantIds } },
     });
-    await prisma.ficha.deleteMany({
+    await prisma.clientRecord.deleteMany({
       where: { tenantId: { in: tenantIds } },
     });
     await prisma.attendance.deleteMany({
@@ -370,7 +370,7 @@ describe("Attendance", () => {
       ).resolves.not.toBeNull();
     });
 
-    it("allows reassigning attendance while keeping linked ficha and payment", async () => {
+    it("allows reassigning attendance while keeping linked client record and payment", async () => {
       const attendanceId = await createAttendance(
         tenantAId,
         { appointmentId: appointmentAId, notes: "" },
@@ -386,7 +386,7 @@ describe("Attendance", () => {
       const attendance = await prisma.attendance.findUniqueOrThrow({
         where: { id: attendanceId },
       });
-      const ficha = await prisma.ficha.create({
+      const clientRecord = await prisma.clientRecord.create({
         data: {
           tenantId: tenantAId,
           clientId: clientAId,
@@ -419,7 +419,7 @@ describe("Attendance", () => {
         notes: "Reassociado",
       });
       await expect(
-        prisma.ficha.findUnique({ where: { id: ficha.id } }),
+        prisma.clientRecord.findUnique({ where: { id: clientRecord.id } }),
       ).resolves.toMatchObject({ attendanceId });
       await expect(
         prisma.payment.findUnique({ where: { id: payment.id } }),
@@ -427,7 +427,7 @@ describe("Attendance", () => {
       expect(attendance.id).toBe(attendanceId);
     });
 
-    it("restricts attendance deletion when payment or ficha exists", async () => {
+    it("restricts attendance deletion when payment or client record exists", async () => {
       const attendanceId = await createAttendance(
         tenantAId,
         { appointmentId: appointmentAId, notes: "" },

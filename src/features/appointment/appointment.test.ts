@@ -91,7 +91,7 @@ describe("Appointment", () => {
     await prisma.payment.deleteMany({
       where: { tenantId: { in: tenantIds } },
     });
-    await prisma.ficha.deleteMany({
+    await prisma.clientRecord.deleteMany({
       where: { tenantId: { in: tenantIds } },
     });
     await prisma.attendance.deleteMany({

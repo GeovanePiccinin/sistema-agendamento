@@ -6,6 +6,7 @@ import {
   Users,
   HardHat,
   ClipboardCheck,
+  FileText,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -44,5 +45,10 @@ export const navigationItems: NavigationItem[] = [
     label: "Atendimentos",
     href: "/attendances",
     icon: ClipboardCheck,
+  },
+  {
+    label: "Fichas de clientes",
+    href: "/client-records",
+    icon: FileText,
   },
 ];
