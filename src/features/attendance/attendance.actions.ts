@@ -9,11 +9,14 @@ import {
   createAttendance,
   deleteAttendance,
   findAttendanceFormOptions,
+  findAttendanceWorkspace,
   findAttendances,
   updateAttendance,
 } from "./attendance.repository";
 import {
   attendanceListQuerySchema,
+  attendanceWorkspaceQuerySchema,
+  type AttendanceWorkspace,
   type AttendanceListResult,
 } from "./attendance.query";
 import {
@@ -68,6 +71,19 @@ export async function getAttendances(
   );
 }
 
+export async function getAttendanceWorkspace(
+  input: unknown,
+): Promise<AttendanceWorkspace | null> {
+  const actor = await getAttendanceActor();
+  const query = attendanceWorkspaceQuerySchema.parse(input);
+
+  return findAttendanceWorkspace(
+    actor.tenantId,
+    query.id,
+    actor.role === "PROFESSIONAL" ? actor.professionalId : undefined,
+  );
+}
+
 export async function getAttendanceFormOptions(input: unknown) {
   const actor = await getAttendanceActor();
   const parsedInput = attendanceFormOptionsSchema.parse(input);
@@ -79,7 +95,7 @@ export async function getAttendanceFormOptions(input: unknown) {
   );
 }
 
-export async function createAttendanceAction(input: unknown): Promise<void> {
+export async function createAttendanceAction(input: unknown): Promise<string> {
   const actor = await getAttendanceActor();
   const data = createAttendanceSchema.parse(input);
 
@@ -98,6 +114,8 @@ export async function createAttendanceAction(input: unknown): Promise<void> {
       },
       "Attendance created",
     );
+
+    return attendanceId;
   } catch (error: unknown) {
     logger.error(
       {

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SortingState } from "@tanstack/react-table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { CrudConfirmDialog } from "@/components/crud/crud-confirm-dialog";
@@ -95,6 +96,7 @@ function formatDateTime(date: Date): string {
 }
 
 export function AttendanceContainer() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const {
     search,
@@ -295,6 +297,15 @@ export function AttendanceContainer() {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/attendances/${row.original.id}`)}
+            aria-label={`Abrir atendimento de ${row.original.appointment.client.name}`}
+          >
+            Abrir
+          </Button>
           <Button
             type="button"
             variant="ghost"

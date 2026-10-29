@@ -264,13 +264,13 @@ export function AppointmentContainer() {
 
   const startAttendanceMutation = useMutation({
     mutationFn: createAttendanceAction,
-    onSuccess: async () => {
+    onSuccess: async (attendanceId) => {
       toast.success("Atendimento iniciado com sucesso.");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["appointments"] }),
         queryClient.invalidateQueries({ queryKey: ["attendances"] }),
       ]);
-      router.push("/attendances");
+      router.push(`/attendances/${attendanceId}`);
     },
     onError: (error) => {
       toast.error(
@@ -365,7 +365,7 @@ export function AppointmentContainer() {
 
   function handleStartAttendance(appointment: AppointmentListItem) {
     if (appointment.attendanceId) {
-      router.push("/attendances");
+      router.push(`/attendances/${appointment.attendanceId}`);
       return;
     }
 
@@ -379,8 +379,10 @@ export function AppointmentContainer() {
     });
   }
 
-  function handleOpenAttendance() {
-    router.push("/attendances");
+  function handleOpenAttendance(appointment: AppointmentListItem) {
+    if (appointment.attendanceId) {
+      router.push(`/attendances/${appointment.attendanceId}`);
+    }
   }
 
   const columnHelper = createAppColumnHelper<AppointmentListItem>();
@@ -429,7 +431,7 @@ export function AppointmentContainer() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleOpenAttendance}
+              onClick={() => handleOpenAttendance(row.original)}
             >
               Abrir atendimento
             </Button>

@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   createAttendance,
   deleteAttendance,
+  findAttendanceWorkspace,
   findAttendanceFormOptions,
   findAttendances,
   updateAttendance,
@@ -192,6 +193,86 @@ describe("Attendance", () => {
   });
 
   describe("repository", () => {
+    it("loads only the authorized attendance and its client's history and records", async () => {
+      const current = await prisma.attendance.create({
+        data: {
+          tenantId: tenantAId,
+          appointmentId: appointmentAId,
+          notes: "Atendimento atual",
+        },
+      });
+      const previousAppointment = await createAppointmentFixture({
+        tenantId: tenantAId,
+        clientId: clientAId,
+        professionalId: professionalAId,
+        serviceId: serviceAId,
+        startAt: new Date("2032-04-04T10:00:00.000Z"),
+        status: "CONFIRMED",
+      });
+      const previousAttendance = await prisma.attendance.create({
+        data: {
+          tenantId: tenantAId,
+          appointmentId: previousAppointment.id,
+          status: "COMPLETED",
+        },
+      });
+      const otherClient = await prisma.client.create({
+        data: { tenantId: tenantAId, name: "Outro cliente" },
+      });
+      await prisma.clientRecord.createMany({
+        data: [
+          {
+            tenantId: tenantAId,
+            clientId: clientAId,
+            attendanceId: current.id,
+            content: "Prontuário do cliente atual",
+          },
+          {
+            tenantId: tenantAId,
+            clientId: clientAId,
+            content: "Registro sem atendimento",
+          },
+          {
+            tenantId: tenantAId,
+            clientId: otherClient.id,
+            content: "Prontuário de outro cliente",
+          },
+        ],
+      });
+
+      const workspace = await findAttendanceWorkspace(
+        tenantAId,
+        current.id,
+        professionalAId,
+      );
+
+      expect(workspace).toMatchObject({
+        id: current.id,
+        appointment: {
+          client: { id: clientAId, name: "Ana Cliente" },
+          professional: { id: professionalAId, name: "Bruno Profissional" },
+          service: { id: serviceAId, name: "Corte" },
+        },
+      });
+      expect(workspace?.history.map(({ id }) => id)).toEqual([
+        previousAttendance.id,
+      ]);
+      expect(workspace?.clientRecords).toHaveLength(2);
+      expect(workspace?.clientRecords.map(({ content }) => content)).toEqual(
+        expect.arrayContaining([
+          "Prontuário do cliente atual",
+          "Registro sem atendimento",
+        ]),
+      );
+
+      await expect(
+        findAttendanceWorkspace(tenantBId, current.id),
+      ).resolves.toBeNull();
+      await expect(
+        findAttendanceWorkspace(tenantAId, current.id, "another-professional"),
+      ).resolves.toBeNull();
+    });
+
     it("creates attendance once for a non-cancelled appointment", async () => {
       const attendanceId = await createAttendance(
         tenantAId,

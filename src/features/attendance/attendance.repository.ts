@@ -9,6 +9,7 @@ import type {
   AttendanceListItem,
   AttendanceListQuery,
   AttendanceListResult,
+  AttendanceWorkspace,
 } from "./attendance.query";
 import type {
   CreateAttendanceData,
@@ -158,6 +159,142 @@ export async function findAttendances(
     page,
     pageSize,
     pageCount: Math.ceil(total / pageSize),
+  };
+}
+
+export async function findAttendanceWorkspace(
+  tenantId: string,
+  attendanceId: string,
+  professionalScopeId?: string,
+): Promise<AttendanceWorkspace | null> {
+  const attendance = await prisma.attendance.findFirst({
+    where: {
+      id: attendanceId,
+      tenantId,
+      ...(professionalScopeId
+        ? { appointment: { professionalId: professionalScopeId } }
+        : {}),
+    },
+    select: {
+      id: true,
+      status: true,
+      startedAt: true,
+      completedAt: true,
+      notes: true,
+      appointment: {
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          notes: true,
+          client: {
+            select: { id: true, name: true, email: true, phone: true },
+          },
+          professional: {
+            select: {
+              id: true,
+              user: { select: { name: true } },
+            },
+          },
+          service: {
+            select: { id: true, name: true, duration: true, price: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!attendance) {
+    return null;
+  }
+
+  const clientId = attendance.appointment.client.id;
+  const [history, clientRecords] = await prisma.$transaction([
+    prisma.attendance.findMany({
+      where: {
+        tenantId,
+        id: { not: attendance.id },
+        appointment: {
+          tenantId,
+          clientId,
+          ...(professionalScopeId ? { professionalId: professionalScopeId } : {}),
+        },
+      },
+      orderBy: [{ appointment: { startAt: "desc" } }, { id: "asc" }],
+      select: {
+        id: true,
+        status: true,
+        startedAt: true,
+        completedAt: true,
+        notes: true,
+        appointment: {
+          select: {
+            startAt: true,
+            endAt: true,
+            status: true,
+            professional: { select: { user: { select: { name: true } } } },
+            service: { select: { name: true } },
+          },
+        },
+      },
+    }),
+    prisma.clientRecord.findMany({
+      where: { tenantId, clientId },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        updatedAt: true,
+        attendance: {
+          select: {
+            id: true,
+            status: true,
+            appointment: { select: { startAt: true } },
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    id: attendance.id,
+    status: attendance.status,
+    startedAt: attendance.startedAt,
+    completedAt: attendance.completedAt,
+    notes: attendance.notes,
+    appointment: {
+      ...attendance.appointment,
+      professional: {
+        id: attendance.appointment.professional.id,
+        name: attendance.appointment.professional.user.name,
+      },
+      service: {
+        ...attendance.appointment.service,
+        price: Number(attendance.appointment.service.price),
+      },
+    },
+    history: history.map((item) => ({
+      ...item,
+      appointment: {
+        ...item.appointment,
+        professional: { name: item.appointment.professional.user.name },
+      },
+    })),
+    clientRecords: clientRecords.map((record) => ({
+      id: record.id,
+      content: record.content,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      attendance: record.attendance
+        ? {
+            id: record.attendance.id,
+            status: record.attendance.status,
+            startAt: record.attendance.appointment.startAt,
+          }
+        : null,
+    })),
   };
 }
 
